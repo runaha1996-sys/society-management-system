@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payments - Aananda Society</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+  <div class="dashboard">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header"><i class="fas fa-building"
+          style="font-size:1.4rem;color:var(--primary-light)"></i><span class="logo-text">Aananda</span></div>
+      <nav class="sidebar-menu">
+        <a href="index.html"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
+        <a href="members.html"><i class="fas fa-users"></i><span>Members</span></a>
+        <a href="complaints.html"><i class="fas fa-exclamation-circle"></i><span>Complaints</span></a>
+        <a href="payments.html"><i class="fas fa-credit-card"></i><span>Payments</span></a>
+        <a href="expenses.html"><i class="fas fa-money-bill-wave"></i><span>Expenses</span></a>
+        <a href="visitors.html"><i class="fas fa-user-clock"></i><span>Visitors</span></a>
+        <a href="notices.html"><i class="fas fa-bullhorn"></i><span>Notices</span></a>
+        <a href="reports.html"><i class="fas fa-chart-bar"></i><span>Reports</span></a>
+        <a href="settings.html"><i class="fas fa-cog"></i><span>Settings</span></a>
+      </nav>
+    </aside>
+    <div class="main-content">
+      <header class="top-navbar">
+        <div class="left"><button class="toggle-sidebar" id="toggleSidebar"><i class="fas fa-bars"></i></button><span
+            class="page-title">Payments</span></div>
+        <div class="right">
+          <button class="dark-toggle" onclick="toggleDarkMode()"><i class="fas fa-moon"></i></button>
+          <div class="dropdown"><button class="icon-btn" onclick="toggleDropdown('notifMenu')"><i
+                class="fas fa-bell"></i><span class="badge">3</span></button>
+            <div class="dropdown-menu notif-dropdown" id="notifMenu">
+              <div class="notif-header">Notifications</div>
+              <div class="notif-item">Payment reminder sent<br><small>1 hour ago</small></div>
+            </div>
+          </div>
+          <div class="dropdown"><button class="profile-btn" onclick="toggleDropdown('profileMenu')">
+              <div class="avatar">A</div><span class="name">Admin</span><i class="fas fa-chevron-down"
+                style="font-size:.7rem"></i>
+            </button>
+            <div class="dropdown-menu" id="profileMenu"><a href="settings.html"><i class="fas fa-user"></i>
+                Profile</a><button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button></div>
+          </div>
+        </div>
+      </header>
+      <div class="content">
+        <div class="content-header">
+          <h1>Payments</h1>
+          <div class="toolbar">
+            <select class="filter-select" id="paymentFilter" onchange="filterTable('paymentFilter','paymentTable',4)">
+              <option value="">All Status</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+            </select>
+            <div class="search-box"><i class="fas fa-search"></i><input type="text" id="paymentSearch"
+                placeholder="Search..." oninput="searchTable('paymentSearch','paymentTable')"></div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('addPaymentModal')"><i class="fas fa-plus"></i>
+              Add Payment</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="icon-box green"><i class="fas fa-check-circle"></i></div>
+            <div class="info">
+              <h3 id="statTotalCollected">₹0</h3>
+              <p>Total Collected</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="icon-box orange"><i class="fas fa-clock"></i></div>
+            <div class="info">
+              <h3 id="statTotalPending">₹0</h3>
+              <p>Pending Amount</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="icon-box blue"><i class="fas fa-receipt"></i></div>
+            <div class="info">
+              <h3>₹400</h3>
+              <p>Per Flat/Month</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="table-container">
+              <table id="paymentTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Member</th>
+                    <th>Flat No</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Month</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Data loaded from API -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ADD PAYMENT MODAL -->
+  <div class="modal-overlay" id="addPaymentModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Record New Payment</h3><button class="modal-close" onclick="closeModal('addPaymentModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group"><label>Select Member</label><select id="paymentMemberId">
+            <option value="">Select Member...</option>
+          </select></div>
+        <div class="form-group"><label>Amount (₹)</label><input type="number" id="paymentAmount"
+            placeholder="Enter amount"></div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="paymentType">
+            <option value="Maintenance">Maintenance</option>
+            <option value="Event">Event</option>
+            <option value="Fine">Fine</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Payment Method</label>
+          <select id="paymentMethod">
+            <option value="Cash">Cash</option>
+            <option value="UPI">UPI</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Month</label>
+          <select id="paymentMonth">
+            <option value="January">January</option>
+            <option value="February">February</option>
+            <option value="March">March</option>
+            <option value="April">April</option>
+            <option value="May">May</option>
+            <option value="June">June</option>
+            <option value="July">July</option>
+            <option value="August">August</option>
+            <option value="September">September</option>
+            <option value="October">October</option>
+            <option value="November">November</option>
+            <option value="December">December</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Date</label><input type="date" id="paymentDate"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-sm"
+          onclick="closeModal('addPaymentModal')">Cancel</button><button class="btn btn-primary btn-sm"
+          onclick="addPayment()">Save Payment</button></div>
+    </div>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+
+</html>
