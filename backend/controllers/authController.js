@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 
 exports.login = async (req, res) => {
     const { username, password } = req.body;
+    console.log(`[AUTH] Login attempt for username: ${username}`);
 
     try {
         const [users] = await db.execute('SELECT * FROM users WHERE username = ?', [username]);

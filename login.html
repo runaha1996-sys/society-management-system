@@ -29,6 +29,44 @@
       </p>
     </div>
   </div>
+
+  <!-- Launch Announcement Modal -->
+  <div class="modal-overlay" id="announcementModal">
+    <div class="modal" style="background: linear-gradient(135deg,#0f172a,#1e1b4b); color: #fff; border: 1px solid rgba(255,255,255,0.1); max-width: 550px; width: 90%;">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <h3 style="color: var(--primary-light);">Announcement</h3>
+        <button class="modal-close" onclick="closeModal('announcementModal')" style="color: #fff;">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 30px;">
+        <h3 style="color: var(--primary-light); margin-bottom: 15px; font-size: 1.3rem; letter-spacing: 1px;">🚀 KGF SOFTWARE SOLUTION</h3>
+        <div style="margin-bottom: 20px;">
+          <img src="images/banner.png" alt="Launch Banner" style="width: 100%; border-radius: 10px; border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        </div>
+        <p style="font-size: 1rem; margin-bottom: 20px; line-height: 1.6; color: rgba(255,255,255,0.95);">We are excited to announce the launch of our Society Web Portal & Mobile App on <strong>05 June 2026!</strong> 🎉</p>
+        <p style="font-size: 1rem; margin-bottom: 20px; line-height: 1.6; color: rgba(255,255,255,0.95);">DMS SFA Loyalty Will be Launch 20 Aug-2026</p>
+        
+        <div style="text-align: left; background: rgba(0,0,0,0.3); padding: 18px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);">
+          <p style="margin-bottom: 12px; font-size: 0.95rem; display: flex; align-items: center; gap: 12px;"><span style="font-size: 1.2rem;">✨</span> Simple & User-Friendly</p>
+          <p style="margin-bottom: 12px; font-size: 0.95rem; display: flex; align-items: center; gap: 12px;"><span style="font-size: 1.2rem;">💰</span> Very Affordable Cost</p>
+          <p style="margin-bottom: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 12px;"><span style="font-size: 1.2rem;">📱</span> Easy Access Anytime, Anywhere</p>
+        </div>
+        
+        <p style="font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-bottom: 20px; font-style: italic;">Upgrade your society management with smart digital solutions.</p>
+        <div style="display: inline-block; background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 10px 20px; border-radius: 25px; font-size: 0.95rem; font-weight: 600; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(99,102,241,0.4);">
+          📅 Launch Date: 05 June 2026
+        </div>
+        <p style="font-size: 1rem; font-weight: 600; color: #fff; letter-spacing: 0.5px;">Stay tuned for something amazing!</p>
+      </div>
+    </div>
+  </div>
+
   <script src="js/script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(() => {
+        document.getElementById('announcementModal').classList.add('show');
+      }, 500);
+    });
+  </script>
 </body>
 </html>

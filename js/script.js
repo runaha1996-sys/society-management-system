@@ -1,5 +1,5 @@
 // ==================== AUTH SYSTEM ====================
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://127.0.0.1:5001/api';
 
 function checkAuth() {
   const token = localStorage.getItem('token');
@@ -251,52 +251,28 @@ async function fetchDashboardStats() {
     // Role-based stats calculation
     if (localStorage.getItem('role') === 'member') {
       const memberId = localStorage.getItem('member_id');
-      const currentMember = members.find(m => m.id == memberId);
-
-      if (currentMember) {
-        // Calculate months since joining
-        const joinDate = new Date(currentMember.created_at);
-        const now = new Date();
-        const months = (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth()) + 1;
-
-        // Fetch Due Day from settings
-        const sRes = await fetch(`${API_URL}/settings`, { headers: authHeader });
-        const settings = await sRes.json();
-        const dueDay = parseInt(settings.due_day) || 10;
-
-        let totalDue = months * 400;
-
-        // Add ₹100 penalty if current day > dueDay AND not paid for this month
-        const currentMonth = now.toLocaleString('default', { month: 'long' });
-        const hasPaidThisMonth = payments.some(p => p.month === currentMonth && p.status.toLowerCase() === 'paid');
-
-        if (now.getDate() > dueDay && !hasPaidThisMonth) {
-          totalDue += 100;
-        }
-
-        const totalPaid = payments.filter(p => p.status.toLowerCase() === 'paid').reduce((sum, p) => sum + parseFloat(p.amount), 0);
-        const outstanding = totalDue - totalPaid;
-
-        if (paymentsEl) {
-          paymentsEl.parentElement.querySelector('p').textContent = 'Outstanding Balance';
-          paymentsEl.textContent = `₹${outstanding.toLocaleString()}`;
-          paymentsEl.style.color = outstanding > 0 ? 'var(--danger)' : 'var(--success)';
-        }
-      }
-    } else {
-      // Admin view (Net Savings)
-      const sRes = await fetch(`${API_URL}/settings`, { headers: authHeader });
-      const settings = await sRes.json();
-      const openingBalance = parseFloat(settings.opening_balance) || 0;
-
-      const eRes = await fetch(`${API_URL}/expenses`, { headers: authHeader });
-      const expenses = await eRes.json();
-      const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
-      const totalCollected = payments.filter(p => p.status.toLowerCase() === 'paid').reduce((sum, p) => sum + parseFloat(p.amount), 0);
+      
+      // Calculate outstanding based purely on database Pending/Overdue entries
+      const memberPayments = payments.filter(p => p.member_id == memberId);
+      const outstanding = memberPayments
+        .filter(p => p.status.toLowerCase() === 'pending' || p.status.toLowerCase() === 'overdue')
+        .reduce((sum, p) => sum + parseFloat(p.amount), 0);
 
       if (paymentsEl) {
-        const netSavings = openingBalance + totalCollected - totalExpenses;
-        paymentsEl.textContent = `₹${netSavings.toLocaleString()}`;
+        paymentsEl.parentElement.querySelector('p').textContent = 'Outstanding Balance';
+        paymentsEl.textContent = `₹${outstanding.toLocaleString()}`;
+        paymentsEl.style.color = outstanding > 0 ? 'var(--danger)' : 'var(--success)';
+      }
+    } else {
+      // Admin view (Outstanding Collection)
+      const outstandingCollection = payments
+        .filter(p => p.status.toLowerCase() === 'pending' || p.status.toLowerCase() === 'overdue')
+        .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+      if (paymentsEl) {
+        paymentsEl.parentElement.querySelector('p').textContent = 'Outstanding Collection';
+        paymentsEl.textContent = `₹${outstandingCollection.toLocaleString()}`;
+        paymentsEl.style.color = outstandingCollection > 0 ? 'var(--danger)' : 'var(--text)';
       }
     }
 
@@ -548,7 +524,8 @@ async function initReportCharts() {
   } catch (err) { console.error(err); }
 }
 
-// ==================== MEMBER MANAGEMENT ====================
+let allMembers = []; // Global to store fetched members
+
 async function fetchMembers() {
   const tableBody = document.querySelector('#memberTable tbody');
   if (!tableBody) return;
@@ -559,11 +536,11 @@ async function fetchMembers() {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     });
-    const members = await response.json();
+    allMembers = await response.json();
 
     if (response.ok) {
       tableBody.innerHTML = '';
-      members.forEach((member, index) => {
+      allMembers.forEach((member, index) => {
         const row = `
           <tr>
             <td>${member.id}</td>
@@ -576,7 +553,7 @@ async function fetchMembers() {
               <button class="icon-btn" onclick='toggleMemberStatus(${member.id}, "${member.status}")' title="${member.status === 'Active' ? 'Deactivate' : 'Activate'}" style="color:${member.status === 'Active' ? 'var(--success)' : 'var(--warning)'}">
                 <i class="fas fa-power-off"></i>
               </button>
-              <button class="icon-btn" onclick='openEditMemberModal(${JSON.stringify(member)})' style="color:var(--info)"><i class="fas fa-edit"></i></button>
+              <button class="icon-btn" onclick="openEditMemberModalByIndex(${index})" style="color:var(--info)"><i class="fas fa-edit"></i></button>
               <button class="icon-btn" onclick="deleteMember(${member.id})" style="color:var(--danger)"><i class="fas fa-trash"></i></button>
             </td>
           </tr>
@@ -653,13 +630,28 @@ async function deleteMember(id) {
   }
 }
 
-function openEditMemberModal(member) {
-  document.getElementById('editMemberId').value = member.id;
-  document.getElementById('editMemberName').value = member.name;
-  document.getElementById('editMemberFlat').value = member.bungalow_no;
-  document.getElementById('editMemberPhone').value = member.phone;
-  document.getElementById('editMemberEmail').value = member.email;
-  document.getElementById('editMemberStatus').value = member.status;
+function openEditMemberModalByIndex(index) {
+  if (!allMembers || !allMembers[index]) {
+    console.error('Member not found at index:', index);
+    return;
+  }
+  const member = allMembers[index];
+  
+  // Set values and ensure elements exist
+  const fields = {
+    'editMemberId': member.id,
+    'editMemberName': member.name,
+    'editMemberFlat': member.bungalow_no,
+    'editMemberPhone': member.phone || '',
+    'editMemberEmail': member.email || '',
+    'editMemberStatus': member.status
+  };
+
+  for (const [id, val] of Object.entries(fields)) {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  }
+  
   openModal('editMemberModal');
 }
 
@@ -1253,6 +1245,32 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   if (document.querySelector('.notices-grid')) fetchNotices();
 
+  // Update dynamic UI elements
+  const userName = localStorage.getItem('user');
+  if (userName) {
+    const formattedName = userName.charAt(0).toUpperCase() + userName.slice(1);
+    document.querySelectorAll('.profile-btn .name').forEach(el => {
+      el.textContent = formattedName;
+    });
+    document.querySelectorAll('.profile-btn .avatar').forEach(el => {
+      el.textContent = userName.charAt(0).toUpperCase();
+    });
+    // Update welcome message if it exists
+    document.querySelectorAll('h1').forEach(h1 => {
+      if (h1.textContent.includes('Welcome back')) {
+        h1.innerHTML = `Welcome back, ${formattedName} 👋`;
+      }
+    });
+
+    // Update Settings page profile fields if they exist
+    const settingsName = document.querySelector('.card-body input[value*="Admin"]');
+    if (settingsName) settingsName.value = formattedName;
+    const settingsEmail = document.querySelector('.card-body input[type="email"][value*="admin"]');
+    if (settingsEmail) settingsEmail.value = `${userName.toLowerCase()}@aanandapremium.com`;
+    const settingsRole = document.querySelector('.card-body input[value*="Admin"][disabled]');
+    if (settingsRole) settingsRole.value = role.charAt(0).toUpperCase() + role.slice(1);
+  }
+
   // Bind buttons
   const addMemberBtn = document.querySelector('#addMemberModal .btn-primary');
   if (addMemberBtn) addMemberBtn.onclick = addMember;
@@ -1356,11 +1374,13 @@ async function sendChatMessage() {
   } catch (err) { console.error('Chat send error:', err); }
 }
 
-// Update name in profile
+// Update name in profile (Redundant, handled in DOMContentLoaded)
+/*
 const userNameDisplay = document.querySelector('.profile-btn .name');
 if (userNameDisplay && localStorage.getItem('user')) {
   userNameDisplay.textContent = localStorage.getItem('user');
 }
+*/
 
 // Role-based UI restriction
 const role = localStorage.getItem('role');
@@ -1379,7 +1399,7 @@ document.addEventListener('click', e => {
   const sidebar = document.getElementById('sidebar');
   const toggleBtn = document.getElementById('toggleSidebar');
   if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('open')) {
-    if (!sidebar.contains(e.target) && e.target !== toggleBtn) {
+    if (!sidebar.contains(e.target) && toggleBtn && !toggleBtn.contains(e.target)) {
       sidebar.classList.remove('open');
     }
   }

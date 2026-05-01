@@ -12,7 +12,7 @@ async function resetAdmin() {
     });
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('Admin##2026', salt);
+    const hashedPassword = await bcrypt.hash('Admin#2026', salt);
 
     await db.execute('DELETE FROM users WHERE username = "admin"');
     await db.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ['admin', hashedPassword, 'admin']);

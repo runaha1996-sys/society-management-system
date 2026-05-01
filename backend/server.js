@@ -16,36 +16,58 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Request logger
 app.use((req, res, next) => {
     const start = Date.now();
+    console.log(`[REQ] ${req.method} ${req.url}`);
     res.on('finish', () => {
         const duration = Date.now() - start;
-        console.log(`${req.method} ${req.url} ${res.statusCode} - ${duration}ms`);
+        console.log(`[RES] ${req.method} ${req.url} ${res.statusCode} - ${duration}ms`);
     });
     next();
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/members', memberRoutes);
-app.use('/api/visitors', visitorRoutes);
-app.use('/api/complaints', complaintRoutes);
-app.use('/api/notices', noticeRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/chat', chatRoutes);
+// API Routes
+const apiRouter = express.Router();
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/members', memberRoutes);
+apiRouter.use('/visitors', visitorRoutes);
+apiRouter.use('/complaints', complaintRoutes);
+apiRouter.use('/notices', noticeRoutes);
+apiRouter.use('/payments', paymentRoutes);
+apiRouter.use('/expenses', expenseRoutes);
+apiRouter.use('/settings', settingsRoutes);
+apiRouter.use('/chat', chatRoutes);
+
+app.use('/api', apiRouter);
 
 // Root route
 app.get('/', (req, res) => {
     res.send('Society Management API is running...');
 });
 
+// Catch-all route for 404
+app.use((req, res) => {
+    res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(err.status || 500).json({
+        message: err.message || 'Internal Server Error',
+        error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
