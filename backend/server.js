@@ -16,66 +16,69 @@ dotenv.config();
 
 const app = express();
 
-// ✅ Allow frontend URL (important for production)
-const allowedOrigins = [
-    "http://localhost:3000", // local frontend
-    "https://your-frontend.vercel.app" // 🔥 replace with your real Vercel URL
-];
-
-// ✅ CORS config
+// ✅ Middleware
 app.use(cors({
-    origin: function (origin, callback) {
-        // allow requests with no origin (like Postman)
-        if (!origin) return callback(null, true);
-
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        } else {
-            return callback(new Error("CORS not allowed"));
-        }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    credentials: true
+    origin: '*', // later you can restrict to your frontend URL
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
 
-// ✅ Logger
+// ✅ Request Logger (FIXED)
 app.use((req, res, next) => {
+    const start = Date.now();
     console.log(`[REQ] ${req.method} ${req.url}`);
+
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`[RES] ${req.method} ${req.url} ${res.statusCode} - ${duration}ms`);
+    });
+
     next();
 });
 
-// ✅ Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/members', memberRoutes);
-app.use('/api/visitors', visitorRoutes);
-app.use('/api/complaints', complaintRoutes);
-app.use('/api/notices', noticeRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/chat', chatRoutes);
+// ✅ API Routes
+const apiRouter = express.Router();
 
-// ✅ Root check
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/members', memberRoutes);
+apiRouter.use('/visitors', visitorRoutes);
+apiRouter.use('/complaints', complaintRoutes);
+apiRouter.use('/notices', noticeRoutes);
+apiRouter.use('/payments', paymentRoutes);
+apiRouter.use('/expenses', expenseRoutes);
+apiRouter.use('/settings', settingsRoutes);
+apiRouter.use('/chat', chatRoutes);
+
+app.use('/api', apiRouter);
+
+// ✅ Root Route
 app.get('/', (req, res) => {
     res.send('Society Management API is running...');
 });
 
-// ❌ 404 handler
+// ✅ 404 Handler (FIXED)
 app.use((req, res) => {
-    res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+    res.status(404).json({
+        message: `Route ${req.originalUrl} not found`
+    });
 });
 
-// ❌ Error handler
+// ✅ Global Error Handler
 app.use((err, req, res, next) => {
-    console.error(err.message);
-    res.status(500).json({ message: err.message || 'Internal Server Error' });
+    console.error(err.stack);
+
+    res.status(err.status || 500).json({
+        message: err.message || 'Internal Server Error',
+        error: process.env.NODE_ENV === 'development' ? err : {}
+    });
 });
 
-// ✅ PORT (Render uses this)
-const PORT = process.env.PORT || 5000;
+// ✅ PORT
+const PORT = process.env.PORT || 5501;
 
+// ✅ Start Server (FIXED)
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
