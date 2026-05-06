@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS payments (
     payment_date DATE,
     status ENUM('Paid', 'Pending', 'Overdue') DEFAULT 'Pending',
     type VARCHAR(50),
+    month VARCHAR(20),
+    payment_method ENUM('Cash', 'UPI') DEFAULT 'Cash',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (member_id) REFERENCES members(id)
 );

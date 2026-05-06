@@ -52,14 +52,16 @@
         <div class="content-header">
           <h1>Payments</h1>
           <div class="toolbar">
-            <select class="filter-select" id="paymentFilter" onchange="filterTable('paymentFilter','paymentTable',4)">
+            <select class="filter-select" id="paymentFilter" onchange="filterTable('paymentFilter','paymentTable',7)">
               <option value="">All Status</option>
               <option value="paid">Paid</option>
               <option value="pending">Pending</option>
             </select>
             <div class="search-box"><i class="fas fa-search"></i><input type="text" id="paymentSearch"
                 placeholder="Search..." oninput="searchTable('paymentSearch','paymentTable')"></div>
-            <button class="btn btn-primary btn-sm" onclick="openModal('addPaymentModal')"><i class="fas fa-plus"></i>
+            <button class="btn btn-primary btn-sm" onclick="exportPaymentsToExcel()" style="background:var(--success)"><i class="fas fa-file-excel"></i> Export CSV</button>
+            <button class="btn btn-outline btn-sm admin-only" onclick="generateMonthlyDues()" style="color:var(--primary);border-color:var(--primary);margin:0 8px;"><i class="fas fa-calendar-plus"></i> Gen. Monthly Dues</button>
+            <button class="btn btn-primary btn-sm admin-only" onclick="openModal('addPaymentModal')"><i class="fas fa-plus"></i>
               Add Payment</button>
           </div>
         </div>
@@ -102,6 +104,7 @@
                     <th>Month</th>
                     <th>Method</th>
                     <th>Status</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>

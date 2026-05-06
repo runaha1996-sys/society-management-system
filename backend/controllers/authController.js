@@ -20,6 +20,16 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        let nameToDisplay = user.username;
+        if (user.role === 'member' && user.member_id) {
+            const [memberDetails] = await db.execute('SELECT name FROM members WHERE id = ?', [user.member_id]);
+            if (memberDetails.length > 0) {
+                nameToDisplay = memberDetails[0].name;
+            }
+        } else if (user.role === 'admin') {
+            nameToDisplay = 'Admin';
+        }
+
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role, member_id: user.member_id },
             process.env.JWT_SECRET,
@@ -31,6 +41,7 @@ exports.login = async (req, res) => {
             user: {
                 id: user.id,
                 username: user.username,
+                name: nameToDisplay,
                 role: user.role,
                 member_id: user.member_id
             }

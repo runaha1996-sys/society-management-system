@@ -80,7 +80,7 @@ if (loginForm) {
 
       if (response.ok) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', data.user.username);
+        localStorage.setItem('user', data.user.name || data.user.username);
         localStorage.setItem('role', data.user.role);
         localStorage.setItem('member_id', data.user.member_id);
         window.location.href = 'index.html';
@@ -120,7 +120,14 @@ document.querySelectorAll('.sidebar-menu a').forEach(link => {
 function toggleDropdown(id) {
   const menu = document.getElementById(id);
   document.querySelectorAll('.dropdown-menu').forEach(m => { if (m.id !== id) m.classList.remove('show') });
-  if (menu) menu.classList.toggle('show');
+  if (menu) {
+    menu.classList.toggle('show');
+    if (id === 'notifMenu' && menu.classList.contains('show')) {
+      localStorage.setItem('lastSeenNotif', Date.now().toString());
+      const badge = document.querySelector('.icon-btn .badge');
+      if (badge) badge.style.display = 'none';
+    }
+  }
 }
 document.addEventListener('click', e => {
   if (!e.target.closest('.dropdown')) {
@@ -227,22 +234,25 @@ async function fetchDashboardStats() {
   const complaintsEl = document.getElementById('statOpenComplaints');
   const paymentsEl = document.getElementById('statPaymentsCollected');
   const visitorsEl = document.getElementById('statVisitorsToday');
+  const balanceEl = document.getElementById('statCurrentBalance');
 
-  if (!membersEl && !complaintsEl && !paymentsEl && !visitorsEl) return;
+  if (!membersEl && !complaintsEl && !paymentsEl && !visitorsEl && !balanceEl) return;
 
   try {
     const authHeader = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
 
     // Fetch counts from various APIs
-    const [mRes, cRes, pRes, vRes] = await Promise.all([
+    const [mRes, cRes, pRes, vRes, eRes, sRes] = await Promise.all([
       fetch(`${API_URL}/members`, { headers: authHeader }),
       fetch(`${API_URL}/complaints`, { headers: authHeader }),
       fetch(`${API_URL}/payments`, { headers: authHeader }),
-      fetch(`${API_URL}/visitors`, { headers: authHeader })
+      fetch(`${API_URL}/visitors`, { headers: authHeader }),
+      fetch(`${API_URL}/expenses`, { headers: authHeader }),
+      fetch(`${API_URL}/settings`, { headers: authHeader })
     ]);
 
-    const [members, complaints, payments, visitors] = await Promise.all([
-      mRes.json(), cRes.json(), pRes.json(), vRes.json()
+    const [members, complaints, payments, visitors, expenses, settings] = await Promise.all([
+      mRes.json(), cRes.json(), pRes.json(), vRes.json(), eRes.json(), sRes.json()
     ]);
 
     if (membersEl) membersEl.textContent = members.length;
@@ -273,6 +283,19 @@ async function fetchDashboardStats() {
         paymentsEl.parentElement.querySelector('p').textContent = 'Outstanding Collection';
         paymentsEl.textContent = `₹${outstandingCollection.toLocaleString()}`;
         paymentsEl.style.color = outstandingCollection > 0 ? 'var(--danger)' : 'var(--text)';
+      }
+      
+      // Calculate Current Balance
+      if (balanceEl) {
+        const openingBalance = parseFloat(settings.opening_balance) || 0;
+        const totalPaid = payments
+          .filter(p => p.status.toLowerCase() === 'paid')
+          .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+        const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+        
+        const currentBalance = openingBalance + totalPaid - totalExpenses;
+        balanceEl.textContent = `₹${currentBalance.toLocaleString()}`;
+        balanceEl.style.color = currentBalance < 0 ? 'var(--danger)' : 'var(--success)';
       }
     }
 
@@ -396,16 +419,20 @@ async function fetchNotifications() {
     // Sort by date (newest first)
     notifications.sort((a, b) => b.time - a.time);
 
+    const lastSeenStr = localStorage.getItem('lastSeenNotif');
+    const lastSeenTime = lastSeenStr ? new Date(parseInt(lastSeenStr)) : new Date(0);
+    const unseenNotifications = notifications.filter(n => n.time > lastSeenTime);
+
     // Clear and Render
     const header = notifList.querySelector('.notif-header');
     notifList.innerHTML = '';
     if (header) notifList.appendChild(header);
 
-    if (notifications.length === 0) {
-      notifList.insertAdjacentHTML('beforeend', '<div class="notif-item">No alerts in last 10 days</div>');
+    if (unseenNotifications.length === 0) {
+      notifList.insertAdjacentHTML('beforeend', '<div class="notif-item">No new notifications</div>');
       if (badge) badge.style.display = 'none';
     } else {
-      notifications.forEach(notif => {
+      unseenNotifications.forEach(notif => {
         const timeStr = notif.time.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' +
           notif.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const item = `
@@ -416,7 +443,7 @@ async function fetchNotifications() {
         notifList.insertAdjacentHTML('beforeend', item);
       });
       if (badge) {
-        badge.textContent = notifications.length;
+        badge.textContent = unseenNotifications.length;
         badge.style.display = 'block';
       }
     }
@@ -964,7 +991,43 @@ async function addNotice() {
   }
 }
 
+function exportPaymentsToExcel() {
+  const table = document.getElementById('paymentTable');
+  if (!table) return;
+
+  let csvContent = "\uFEFF"; // BOM for Excel UTF-8
+  
+  const headers = [];
+  const ths = table.querySelectorAll('thead th');
+  ths.forEach(th => headers.push(`"${th.innerText}"`));
+  csvContent += headers.join(",") + "\n";
+
+  const rows = table.querySelectorAll('tbody tr');
+  rows.forEach(row => {
+    if (row.style.display !== 'none') {
+      const rowData = [];
+      const cells = row.querySelectorAll('td');
+      cells.forEach(cell => {
+        let text = cell.innerText.replace(/"/g, '""').replace(/\n/g, ' ').trim();
+        rowData.push(`"${text}"`);
+      });
+      csvContent += rowData.join(",") + "\n";
+    }
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `Payments_Report_${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 // ==================== PAYMENT MANAGEMENT ====================
+let allPayments = [];
+
 async function fetchPayments() {
   const tableBody = document.querySelector('#paymentTable tbody');
   if (!tableBody) return;
@@ -977,6 +1040,7 @@ async function fetchPayments() {
 
     if (response.ok) {
       tableBody.innerHTML = '';
+      allPayments = payments;
       let totalCollected = 0;
       let totalPending = 0;
 
@@ -986,6 +1050,12 @@ async function fetchPayments() {
         else totalPending += amt;
 
         const date = payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Pending';
+        const isPending = payment.status.toLowerCase() === 'pending' || payment.status.toLowerCase() === 'overdue';
+        const actionHtml = isPending
+          ? `<button class="btn btn-sm btn-outline" onclick="printDocument(${payment.id}, 'invoice')" style="margin-right:5px;color:var(--primary);border-color:var(--primary)"><i class="fas fa-print"></i> Invoice</button>
+             <button class="btn btn-sm btn-primary admin-only" onclick="markAsPaid(${payment.id})"><i class="fas fa-check"></i> Paid</button>`
+          : `<button class="btn btn-sm btn-outline" onclick="printDocument(${payment.id}, 'receipt')" style="color:var(--success);border-color:var(--success)"><i class="fas fa-print"></i> Receipt</button>`;
+
         const row = `
           <tr>
             <td>${index + 1}</td>
@@ -994,8 +1064,9 @@ async function fetchPayments() {
             <td>₹${payment.amount}</td>
             <td>${date}</td>
             <td>${payment.month || '-'}</td>
-            <td>${payment.payment_method || 'Cash'}</td>
+            <td>${payment.payment_method || '-'}</td>
             <td><span class="status ${payment.status.toLowerCase()}">${payment.status}</span></td>
+            <td>${actionHtml}</td>
           </tr>
         `;
         tableBody.insertAdjacentHTML('beforeend', row);
@@ -1078,6 +1149,160 @@ async function addPayment() {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Save Payment';
   }
+}
+
+async function generateMonthlyDues() {
+  const amount = prompt('Enter maintenance amount for this month:', '400');
+  if (!amount) return;
+
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const currentMonth = months[new Date().getMonth()];
+  const month = prompt('Enter month for the dues (e.g. May):', currentMonth);
+  if (!month) return;
+
+  if (!confirm(`Are you sure you want to generate dues of ₹${amount} for ${month} for all active members?`)) return;
+
+  try {
+    const response = await fetch(`${API_URL}/payments/generate-dues`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ amount, month, year: new Date().getFullYear() })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      alert(data.message);
+      fetchPayments();
+    } else {
+      alert(data.message || 'Failed to generate dues');
+    }
+  } catch (error) {
+    console.error('Error generating dues:', error);
+    alert('Server connection failed');
+  }
+}
+
+async function markAsPaid(id) {
+  if (!confirm('Mark this invoice as Paid?')) return;
+  const method = prompt('Enter payment method (e.g. Cash, UPI):', 'UPI');
+  if (!method) return;
+
+  try {
+    const response = await fetch(`${API_URL}/payments/${id}/mark-paid`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ payment_method: method })
+    });
+    if (response.ok) {
+      fetchPayments();
+    } else {
+      const data = await response.json();
+      alert(data.message || 'Failed to mark as paid');
+    }
+  } catch (error) {
+    console.error('Error marking as paid:', error);
+    alert('Server connection failed');
+  }
+}
+
+function printDocument(id, type) {
+  const payment = allPayments.find(p => p.id === id);
+  if (!payment) return;
+
+  const societyName = "Ananda LIG-EWS Apartment";
+  const title = type === 'invoice' ? 'INVOICE' : 'PAYMENT RECEIPT';
+  const docDate = type === 'invoice' ? new Date().toLocaleDateString('en-GB') : new Date(payment.payment_date).toLocaleDateString('en-GB');
+
+  const printWindow = window.open('', '_blank');
+  
+  const html = `
+    <html>
+      <head>
+        <title>${title} - ${payment.member_name}</title>
+        <style>
+          body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; }
+          .header { text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; }
+          .header h1 { margin: 0; color: #4f46e5; }
+          .header p { margin: 5px 0 0; color: #666; }
+          .title { text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 30px; letter-spacing: 2px; }
+          .details-table { width: 100%; margin-bottom: 40px; border-collapse: collapse; }
+          .details-table td { padding: 8px; vertical-align: top; }
+          .item-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+          .item-table th, .item-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+          .item-table th { background-color: #f8fafc; color: #333; }
+          .total-row { font-weight: bold; font-size: 18px; }
+          .footer { text-align: center; margin-top: 50px; color: #666; font-size: 14px; }
+          .stamp { display: inline-block; border: 2px solid ${type === 'receipt' ? '#10b981' : '#f59e0b'}; color: ${type === 'receipt' ? '#10b981' : '#f59e0b'}; padding: 10px 20px; font-weight: bold; font-size: 20px; transform: rotate(-5deg); margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${societyName}</h1>
+          <p>Bijalpur Indore 452012 | Contact: 9685324380</p>
+        </div>
+        
+        <div class="title">${title}</div>
+        
+        <table class="details-table">
+          <tr>
+            <td>
+              <strong>To:</strong><br>
+              ${payment.member_name}<br>
+              Flat No: ${payment.bungalow_no}
+            </td>
+            <td style="text-align: right;">
+              <strong>${type === 'invoice' ? 'Invoice No:' : 'Receipt No:'}</strong> ${type === 'invoice' ? 'INV' : 'REC'}-${payment.id.toString().padStart(5, '0')}<br>
+              <strong>Date:</strong> ${docDate}<br>
+              <strong>Status:</strong> ${payment.status}
+            </td>
+          </tr>
+        </table>
+        
+        <table class="item-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Month</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${payment.type || 'Maintenance'}</td>
+              <td>${payment.month || '-'}</td>
+              <td>₹${payment.amount}</td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="2" style="text-align: right;">Total Amount:</td>
+              <td>₹${payment.amount}</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div style="text-align: center;">
+          <div class="stamp">${payment.status.toUpperCase()}</div>
+        </div>
+        
+        ${type === 'receipt' ? `<p style="margin-top:40px;"><strong>Payment Method:</strong> ${payment.payment_method || 'Cash'}</p>` : ''}
+        
+        <div class="footer">
+          <p>Thank you for your cooperation!</p>
+          <p>This is a computer-generated document and does not require a physical signature.</p>
+        </div>
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+    </html>
+  `;
+  
+  printWindow.document.write(html);
+  printWindow.document.close();
 }
 
 // ==================== EXPENSE MANAGEMENT ====================
@@ -1374,13 +1599,20 @@ async function sendChatMessage() {
   } catch (err) { console.error('Chat send error:', err); }
 }
 
-// Update name in profile (Redundant, handled in DOMContentLoaded)
-/*
-const userNameDisplay = document.querySelector('.profile-btn .name');
-if (userNameDisplay && localStorage.getItem('user')) {
-  userNameDisplay.textContent = localStorage.getItem('user');
+// Update name in profile and welcome header
+const storedUser = localStorage.getItem('user');
+if (storedUser) {
+  const userNameDisplays = document.querySelectorAll('.profile-btn .name');
+  userNameDisplays.forEach(el => el.textContent = storedUser);
+  
+  const avatars = document.querySelectorAll('.profile-btn .avatar');
+  avatars.forEach(el => el.textContent = storedUser.charAt(0).toUpperCase());
+
+  const welcomeHeader = document.querySelector('.content-header h1');
+  if (welcomeHeader && welcomeHeader.textContent.includes('Welcome back')) {
+    welcomeHeader.textContent = `Welcome back, ${storedUser} 👋`;
+  }
 }
-*/
 
 // Role-based UI restriction
 const role = localStorage.getItem('role');
@@ -1407,3 +1639,52 @@ document.addEventListener('click', e => {
 
 // Initialize Chat
 injectChat();
+
+// ==================== SETTINGS ====================
+async function loadSettings() {
+  if (!document.getElementById('openingBalanceInput')) return;
+  try {
+    const response = await fetch(`${API_URL}/settings`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    const settings = await response.json();
+    document.getElementById('openingBalanceInput').value = settings.opening_balance || 0;
+    document.getElementById('dueDayInput').value = settings.due_day || 10;
+  } catch (error) {
+    console.error('Error loading settings:', error);
+  }
+}
+
+async function updateSettings() {
+  const opening_balance = document.getElementById('openingBalanceInput').value;
+  const due_day = document.getElementById('dueDayInput').value;
+  const btn = document.querySelector('button[onclick="updateSettings()"]');
+  
+  try {
+    if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+    
+    const response = await fetch(`${API_URL}/settings`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}` 
+      },
+      body: JSON.stringify({ opening_balance, due_day, society_name: 'Aananda Society' })
+    });
+    
+    if (response.ok) {
+      alert('Settings updated successfully!');
+    } else {
+      alert('Failed to update settings');
+    }
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    alert('Server connection failed!');
+  } finally {
+    if (btn) { btn.textContent = 'Save Settings'; btn.disabled = false; }
+  }
+}
+
+if (window.location.pathname.includes('settings.html')) {
+  loadSettings();
+}
