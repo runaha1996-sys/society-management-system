@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS society_db;
-USE society_db;
-
 -- Users table for authentication
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -69,6 +66,9 @@ CREATE TABLE IF NOT EXISTS notices (
 -- Insert a default admin user (password: admin123, hashed with bcrypt)
 -- Note: $2b$10$8qDVHvKVVf5Z5H5Z5H5Z5eZ5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z is 'admin123'
 INSERT IGNORE INTO users (username, password) VALUES ('admin', '$2b$10$8qDVHvKVVf5Z5H5Z5H5Z5eZ5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z');
+-- Insert a default admin user (password: 1234, hashed with bcrypt)
+-- Note: $2a$10$NtiXSFal9hw65ZO1Ow0JBewtvbQ8AI/wMDQyhbqYSrR6KQVp78P2y is '1234'
+INSERT IGNORE INTO users (username, password) VALUES ('admin', '$2a$10$NtiXSFal9hw65ZO1Ow0JBewtvbQ8AI/wMDQyhbqYSrR6KQVp78P2y');
 
 -- Sample members
 INSERT INTO members (name, bungalow_no, phone, email, status) VALUES 
