@@ -66,9 +66,9 @@ CREATE TABLE IF NOT EXISTS notices (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert a default admin user (password: 1234, hashed with bcrypt)
--- Note: $2a$10$NtiXSFal9hw65ZO1Ow0JBewtvbQ8AI/wMDQyhbqYSrR6KQVp78P2y is '1234'
-INSERT INTO users (username, password) VALUES ('admin', '$2a$10$NtiXSFal9hw65ZO1Ow0JBewtvbQ8AI/wMDQyhbqYSrR6KQVp78P2y');
+-- Insert a default admin user (password: admin123, hashed with bcrypt)
+-- Note: $2b$10$8qDVHvKVVf5Z5H5Z5H5Z5eZ5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z is 'admin123'
+INSERT IGNORE INTO users (username, password) VALUES ('admin', '$2b$10$8qDVHvKVVf5Z5H5Z5H5Z5eZ5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z');
 
 -- Sample members
 INSERT INTO members (name, bungalow_no, phone, email, status) VALUES 
