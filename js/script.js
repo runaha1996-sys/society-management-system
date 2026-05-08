@@ -1,5 +1,5 @@
 // ==================== AUTH SYSTEM ====================
-const API_URL = 'http://localhost:5001/api';
+const API_URL = 'https://api.rahulpatel.online/api';
 
 function checkAuth() {
   const token = localStorage.getItem('token');
@@ -261,7 +261,7 @@ async function fetchDashboardStats() {
     // Role-based stats calculation
     if (localStorage.getItem('role') === 'member') {
       const memberId = localStorage.getItem('member_id');
-      
+
       // Calculate outstanding based purely on database Pending/Overdue entries
       const memberPayments = payments.filter(p => p.member_id == memberId);
       const outstanding = memberPayments
@@ -284,7 +284,7 @@ async function fetchDashboardStats() {
         paymentsEl.textContent = `₹${outstandingCollection.toLocaleString()}`;
         paymentsEl.style.color = outstandingCollection > 0 ? 'var(--danger)' : 'var(--text)';
       }
-      
+
       // Calculate Current Balance
       if (balanceEl) {
         const openingBalance = parseFloat(settings.opening_balance) || 0;
@@ -292,7 +292,7 @@ async function fetchDashboardStats() {
           .filter(p => p.status.toLowerCase() === 'paid')
           .reduce((sum, p) => sum + parseFloat(p.amount), 0);
         const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
-        
+
         const currentBalance = openingBalance + totalPaid - totalExpenses;
         balanceEl.textContent = `₹${currentBalance.toLocaleString()}`;
         balanceEl.style.color = currentBalance < 0 ? 'var(--danger)' : 'var(--success)';
@@ -663,7 +663,7 @@ function openEditMemberModalByIndex(index) {
     return;
   }
   const member = allMembers[index];
-  
+
   // Set values and ensure elements exist
   const fields = {
     'editMemberId': member.id,
@@ -678,7 +678,7 @@ function openEditMemberModalByIndex(index) {
     const el = document.getElementById(id);
     if (el) el.value = val;
   }
-  
+
   openModal('editMemberModal');
 }
 
@@ -996,7 +996,7 @@ function exportPaymentsToExcel() {
   if (!table) return;
 
   let csvContent = "\uFEFF"; // BOM for Excel UTF-8
-  
+
   const headers = [];
   const ths = table.querySelectorAll('thead th');
   ths.forEach(th => headers.push(`"${th.innerText}"`));
@@ -1155,7 +1155,7 @@ async function generateMonthlyDues() {
   const amount = prompt('Enter maintenance amount for this month:', '400');
   if (!amount) return;
 
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const currentMonth = months[new Date().getMonth()];
   const month = prompt('Enter month for the dues (e.g. May):', currentMonth);
   if (!month) return;
@@ -1219,7 +1219,7 @@ function printDocument(id, type) {
   const docDate = type === 'invoice' ? new Date().toLocaleDateString('en-GB') : new Date(payment.payment_date).toLocaleDateString('en-GB');
 
   const printWindow = window.open('', '_blank');
-  
+
   const html = `
     <html>
       <head>
@@ -1300,7 +1300,7 @@ function printDocument(id, type) {
       </body>
     </html>
   `;
-  
+
   printWindow.document.write(html);
   printWindow.document.close();
 }
@@ -1528,8 +1528,8 @@ function injectChat() {
   `;
   document.body.insertAdjacentHTML('beforeend', chatHTML);
   document.getElementById('chatToggle').onclick = toggleChat;
-  document.getElementById('chatInput').onkeypress = (e) => { if(e.key === 'Enter') sendChatMessage(); };
-  
+  document.getElementById('chatInput').onkeypress = (e) => { if (e.key === 'Enter') sendChatMessage(); };
+
   // Start polling
   setInterval(fetchChatMessages, 5000);
 }
@@ -1569,7 +1569,7 @@ async function fetchChatMessages() {
         </div>
       `;
     });
-    
+
     const wasAtBottom = body.scrollHeight - body.scrollTop <= body.clientHeight + 50;
     body.innerHTML = html;
     if (wasAtBottom) body.scrollTop = body.scrollHeight;
@@ -1584,7 +1584,7 @@ async function sendChatMessage() {
   try {
     await fetch(`${API_URL}/chat`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
@@ -1604,7 +1604,7 @@ const storedUser = localStorage.getItem('user');
 if (storedUser) {
   const userNameDisplays = document.querySelectorAll('.profile-btn .name');
   userNameDisplays.forEach(el => el.textContent = storedUser);
-  
+
   const avatars = document.querySelectorAll('.profile-btn .avatar');
   avatars.forEach(el => el.textContent = storedUser.charAt(0).toUpperCase());
 
@@ -1619,7 +1619,7 @@ const role = localStorage.getItem('role');
 if (role === 'member') {
   // Hide Admin-only items from sidebar
   document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-  
+
   // Protect Settings page from manual entry
   if (window.location.pathname.includes('settings.html')) {
     window.location.href = 'index.html';
@@ -1659,19 +1659,19 @@ async function updateSettings() {
   const opening_balance = document.getElementById('openingBalanceInput').value;
   const due_day = document.getElementById('dueDayInput').value;
   const btn = document.querySelector('button[onclick="updateSettings()"]');
-  
+
   try {
     if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
-    
+
     const response = await fetch(`${API_URL}/settings`, {
       method: 'PUT',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
       body: JSON.stringify({ opening_balance, due_day, society_name: 'Aananda Society' })
     });
-    
+
     if (response.ok) {
       alert('Settings updated successfully!');
     } else {
