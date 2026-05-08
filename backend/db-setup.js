@@ -6,8 +6,8 @@ async function setupDB() {
     const schemaSql = fs.readFileSync('./schema.sql', 'utf8');
     
     // Create database first
-    await db.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'society_db'}\``);
-    await db.query(`USE \`${process.env.DB_NAME || 'society_db'}\``);
+    await db.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.MYSQLDATABASE || 'railway'}\``);
+    await db.query(`USE \`${process.env.MYSQLDATABASE || 'railway'}\``);
     
     // Execute schema
     await db.query(schemaSql);
