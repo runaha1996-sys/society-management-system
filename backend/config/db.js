@@ -35,7 +35,7 @@ if (!pool) {
   pool = mysql.createPool({
     host: process.env.MYSQLHOST || process.env.DB_HOST || 'localhost',
     user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
-    password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
+    password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '851805',
     database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'society_db',
     port: parseInt(process.env.MYSQLPORT || process.env.DB_PORT || 3306, 10),
     waitForConnections: true,

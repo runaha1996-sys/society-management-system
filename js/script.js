@@ -1,5 +1,7 @@
 // ==================== AUTH SYSTEM ====================
-const API_URL = 'https://api.rahulpatel.online/api';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+  ? 'http://localhost:5501/api' 
+  : 'https://api.rahulpatel.online/api';
 
 
 function checkAuth() {
@@ -50,10 +52,10 @@ function logout() {
   window.location.href = 'login.html';
 }
 
-// Run auth check on dashboard pages
-const publicPages = ['home.html', 'login.html', ''];
-const currentPage = window.location.pathname.split('/').pop() || 'home.html';
-if (!publicPages.includes(currentPage) && currentPage !== 'home.html') {
+// Run auth check on protected pages
+const publicPages = ['index.html', 'login.html', ''];
+const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+if (!publicPages.includes(currentPage)) {
   checkAuth();
 }
 
@@ -84,7 +86,7 @@ if (loginForm) {
         localStorage.setItem('user', data.user.name || data.user.username);
         localStorage.setItem('role', data.user.role);
         localStorage.setItem('member_id', data.user.member_id);
-        window.location.href = 'index.html';
+        window.location.href = 'dashboard.html';
       } else {
         err.textContent = data.message || 'Invalid username or password!';
         err.style.display = 'block';
@@ -112,7 +114,7 @@ if (toggleBtn) {
 // Active menu
 document.querySelectorAll('.sidebar-menu a').forEach(link => {
   const href = link.getAttribute('href');
-  if (href === currentPage || (currentPage === '' && href === 'index.html')) {
+  if (href === currentPage || (currentPage === 'dashboard.html' && href === 'dashboard.html')) {
     link.classList.add('active');
   }
 });
