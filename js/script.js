@@ -643,28 +643,45 @@ alert('Member added successfully!');
   }
 }
 
+
 async function deleteMember(id) {
-  console.log('Delete requested for member ID:', id);
-  console.log('Delete confirmed for ID:', id);
-  // Using window.confirm for better compatibility
-  if (!window.confirm('Are you sure you want to delete this member?')) return;
+  console.log('--- DELETE PROCESS START ---');
+  console.log('Target ID:', id);
+  
+  const confirmed = window.confirm('Are you sure you want to delete this member?');
+  console.log('User confirmation result:', confirmed);
+  
+  if (!confirmed) {
+    console.log('Delete cancelled by user.');
+    return;
+  }
 
   try {
+    console.log('Sending DELETE request to:', `${API_URL}/members/${id}`);
     const response = await fetch(`${API_URL}/members/${id}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
     });
 
+    console.log('Response Status:', response.status);
+    const data = await response.json();
+    console.log('Response Data:', data);
+
     if (response.ok) {
-      fetchMembers();
       alert('Member deleted successfully!');
+      fetchMembers();
     } else {
-      alert('Failed to delete member');
+      alert('Error: ' + (data.message || 'Failed to delete member'));
     }
   } catch (error) {
-    console.error('Error deleting member:', error);
+    console.error('CRITICAL DELETE ERROR:', error);
+    alert('Network error: Could not reach the server.');
   }
 }
+
 
 function openEditMemberModalByIndex(index) {
   if (!allMembers || !allMembers[index]) {
