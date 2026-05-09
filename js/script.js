@@ -645,7 +645,9 @@ alert('Member added successfully!');
 
 async function deleteMember(id) {
   console.log('Delete requested for member ID:', id);
-  if (!confirm('Are you sure you want to delete this member? All associated payments and complaints will also be removed.')) return;
+  console.log('Delete confirmed for ID:', id);
+  // Using window.confirm for better compatibility
+  if (!window.confirm('Are you sure you want to delete this member?')) return;
 
   try {
     const response = await fetch(`${API_URL}/members/${id}`, {
