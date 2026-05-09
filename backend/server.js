@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
-// ✅ Load environment variables from the same directory as this file
+// ✅ Load environment variables
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+const db = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const memberRoutes = require('./routes/memberRoutes');
 const visitorRoutes = require('./routes/visitorRoutes');
@@ -20,29 +22,38 @@ const app = express();
 
 // ✅ Middleware
 app.use(cors({
-    origin: '*', // later you can restrict to your frontend URL
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
 
-// ✅ Request Logger (FIXED)
-app.use((req, res, next) => {
-    const start = Date.now();
-    console.log(`[REQ] ${req.method} ${req.url}`);
-
-    res.on('finish', () => {
-        const duration = Date.now() - start;
-        console.log(`[RES] ${req.method} ${req.url} ${res.statusCode} - ${duration}ms`);
-    });
-
-    next();
-});
+// ✅ Auto-Reset Admin on Startup (Ensures production admin is always admin / admin123)
+async function ensureAdminUser() {
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('admin123', salt);
+        
+        // Check if admin exists
+        const [rows] = await db.query('SELECT * FROM users WHERE username = "admin"');
+        
+        if (rows.length === 0) {
+            await db.query('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ['admin', hashedPassword, 'admin']);
+            console.log('✅ Default admin user created (admin / admin123)');
+        } else {
+            // Update password to match admin123
+            await db.query('UPDATE users SET password = ? WHERE username = "admin"', [hashedPassword]);
+            console.log('✅ Admin password verified and synced');
+        }
+    } catch (err) {
+        console.error('⚠️ Could not ensure admin user:', err.message);
+    }
+}
+ensureAdminUser();
 
 // ✅ API Routes
 const apiRouter = express.Router();
-
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/members', memberRoutes);
 apiRouter.use('/visitors', visitorRoutes);
@@ -55,32 +66,23 @@ apiRouter.use('/chat', chatRoutes);
 
 app.use('/api', apiRouter);
 
-// ✅ Root Route
 app.get('/', (req, res) => {
     res.send('Society Management API is running...');
 });
 
-// ✅ 404 Handler (FIXED)
 app.use((req, res) => {
-    res.status(404).json({
-        message: `Route ${req.originalUrl} not found`
-    });
+    res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });
 
-// ✅ Global Error Handler
 app.use((err, req, res, next) => {
     console.error(err.stack);
-
     res.status(err.status || 500).json({
         message: err.message || 'Internal Server Error',
         error: process.env.NODE_ENV === 'development' ? err : {}
     });
 });
 
-// ✅ PORT
 const PORT = process.env.PORT || 5501;
-
-// ✅ Start Server (FIXED)
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
