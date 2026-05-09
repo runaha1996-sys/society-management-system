@@ -39,7 +39,7 @@ async function ensureAdminUser() {
         const [rows] = await db.query('SELECT * FROM users WHERE username = "admin"');
         
         if (rows.length === 0) {
-            await db.query('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ['admin', hashedPassword, 'admin']);
+            await db.query('INSERT INTO users (username, password, role, member_id) VALUES (?, ?, ?, ?)', ['admin', hashedPassword, 'admin', null]);
             console.log('✅ Default admin user created (admin / admin123)');
         } else {
             // Update password to match admin123
@@ -82,7 +82,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-const PORT = process.env.PORT || 5501;
+const PORT = process.env.PORT || 5001; // Match the configured port
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

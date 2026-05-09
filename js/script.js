@@ -627,6 +627,7 @@ async function addMember() {
     if (response.ok) {
       closeModal('addMemberModal');
       fetchMembers();
+alert('Member added successfully!');
       // Clear inputs
       modal.querySelectorAll('input').forEach(i => i.value = '');
     } else {
@@ -653,6 +654,7 @@ async function deleteMember(id) {
 
     if (response.ok) {
       fetchMembers();
+      alert('Member updated successfully!');
     } else {
       alert('Failed to delete member');
     }
@@ -709,6 +711,7 @@ async function updateMember() {
       closeModal('editMemberModal');
       document.getElementById('editMemberPassword').value = '';
       fetchMembers();
+      alert('Member updated successfully!');
     } else {
       alert('Failed to update member');
     }
@@ -730,6 +733,7 @@ async function toggleMemberStatus(id, currentStatus) {
 
     if (response.ok) {
       fetchMembers();
+      alert('Member updated successfully!');
     } else {
       alert('Failed to update status');
     }
@@ -801,6 +805,7 @@ async function addVisitor() {
     if (response.ok) {
       closeModal('addVisitorModal');
       fetchVisitors();
+alert('Visitor added successfully!');
       modal.querySelectorAll('input').forEach(i => i.value = '');
     } else {
       const data = await response.json();
@@ -906,6 +911,7 @@ async function addComplaint() {
     if (response.ok) {
       closeModal('addComplaintModal');
       fetchComplaints();
+alert('Complaint submitted successfully!');
       document.getElementById('complaintMemberId').value = '';
       document.getElementById('complaintTitle').value = '';
       document.getElementById('complaintDesc').value = '';
@@ -980,6 +986,7 @@ async function addNotice() {
     if (response.ok) {
       closeModal('addNoticeModal');
       fetchNotices();
+alert('Notice posted successfully!');
       modal.querySelectorAll('input').forEach(i => i.value = '');
       modal.querySelector('textarea').value = '';
     } else {
@@ -1141,6 +1148,7 @@ async function addPayment() {
     if (response.ok) {
       closeModal('addPaymentModal');
       fetchPayments();
+alert('Payment added successfully!');
       modal.querySelectorAll('input').forEach(i => i.value = '');
     } else {
       const data = await response.json();
@@ -1393,6 +1401,7 @@ async function addExpense() {
     if (response.ok) {
       closeModal('addExpenseModal');
       fetchExpenses();
+alert('Expense saved successfully!');
       document.getElementById('expenseTitle').value = '';
       document.getElementById('expenseAmount').value = '';
     } else {
@@ -1626,7 +1635,7 @@ if (role === 'member') {
 
   // Protect Settings page from manual entry
   if (window.location.pathname.includes('settings.html')) {
-    window.location.href = 'index.html';
+    window.location.href = 'dashboard.html';
   }
 }
 
