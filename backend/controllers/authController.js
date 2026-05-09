@@ -1,5 +1,4 @@
 const db = require("../config/db");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 exports.login = async (req, res) => {
@@ -26,10 +25,8 @@ exports.login = async (req, res) => {
       });
     }
 
-    // 🔥 IMPORTANT: bcrypt compare
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
+    // 🔥 SIMPLE PASSWORD CHECK (NO BCRYPT)
+    if (password !== user.password) {
       return res.status(401).json({
         message: "Invalid credentials"
       });
