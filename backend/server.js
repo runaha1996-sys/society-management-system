@@ -35,7 +35,6 @@ async function initializeDatabase() {
     try {
         console.log('🔄 Initializing database...');
         
-        // Ensure core tables exist (simplified version of schema.sql)
         await db.query(`CREATE TABLE IF NOT EXISTS members (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), bungalow_no VARCHAR(20), phone VARCHAR(20), email VARCHAR(100), status VARCHAR(20) DEFAULT 'Active', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
         await db.query(`CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(50) UNIQUE, password VARCHAR(255), role VARCHAR(20), member_id INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
         await db.query(`CREATE TABLE IF NOT EXISTS expenses (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), amount DECIMAL(10, 2), expense_date DATE, month VARCHAR(20), category VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
@@ -46,22 +45,26 @@ async function initializeDatabase() {
         await db.query(`CREATE TABLE IF NOT EXISTS complaints (id INT AUTO_INCREMENT PRIMARY KEY, member_id INT, title VARCHAR(255), description TEXT, status VARCHAR(20) DEFAULT 'Pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
         await db.query(`CREATE TABLE IF NOT EXISTS payments (id INT AUTO_INCREMENT PRIMARY KEY, member_id INT, amount DECIMAL(10, 2), payment_date DATE, status VARCHAR(20) DEFAULT 'Pending', type VARCHAR(50), month VARCHAR(20), payment_method VARCHAR(20) DEFAULT 'Cash', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
 
-        // Ensure default settings
         await db.query('INSERT IGNORE INTO settings (id, opening_balance, society_name, due_day) VALUES (1, 0, "Aananda Society", 10)');
 
-        // Ensure Admin user
+        // Ensure Admin
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash('admin123', salt);
         const [rows] = await db.query('SELECT * FROM users WHERE username = "admin"');
-        
         if (rows.length === 0) {
             await db.query('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ['admin', hashedPassword, 'admin']);
-            console.log('✅ Default admin user created (admin / admin123)');
         } else {
             await db.query('UPDATE users SET password = ? WHERE username = "admin"', [hashedPassword]);
-            console.log('✅ Admin password verified and synced');
         }
         
+        // Ensure Sample Members if table is empty
+        const [mRows] = await db.query('SELECT COUNT(*) as count FROM members');
+        if (mRows[0].count === 0) {
+            await db.query("INSERT INTO members (name, bungalow_no, phone, email, status) VALUES ('Rajesh Sharma', 'A-101', '+91 98765 00001', 'rajesh@email.com', 'Active')");
+            await db.query("INSERT INTO members (name, bungalow_no, phone, email, status) VALUES ('Priya Patel', 'A-102', '+91 98765 00002', 'priya@email.com', 'Active')");
+            console.log('✅ Sample members added to production database.');
+        }
+
         console.log('✅ Database initialization complete.');
     } catch (err) {
         console.error('❌ Database initialization failed:', err.message);
