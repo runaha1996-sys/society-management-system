@@ -68,7 +68,8 @@ if (loginForm) {
     const err = document.getElementById('loginError');
     const submitBtn = loginForm.querySelector('button[type="submit"]');
 
-    try {
+    console.log("Attempting login to:", `${API_URL}/auth/login`);
+try {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Logging in...';
 
@@ -91,6 +92,7 @@ if (loginForm) {
         err.style.display = 'block';
       }
     } catch (error) {
+console.error("Login Fetch Error:", error);
       err.textContent = 'Server connection failed!';
       err.style.display = 'block';
     } finally {
