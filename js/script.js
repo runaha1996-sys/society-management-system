@@ -644,6 +644,7 @@ alert('Member added successfully!');
 }
 
 async function deleteMember(id) {
+  console.log('Delete requested for member ID:', id);
   if (!confirm('Are you sure you want to delete this member? All associated payments and complaints will also be removed.')) return;
 
   try {
@@ -654,7 +655,7 @@ async function deleteMember(id) {
 
     if (response.ok) {
       fetchMembers();
-      alert('Member updated successfully!');
+      alert('Member deleted successfully!');
     } else {
       alert('Failed to delete member');
     }
