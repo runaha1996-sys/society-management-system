@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
 
 // ✅ Load environment variables
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -29,28 +30,44 @@ app.use(cors({
 
 app.use(express.json());
 
-// ✅ Auto-Reset Admin on Startup (Ensures production admin is always admin / admin123)
-async function ensureAdminUser() {
+// ✅ Auto-Initialize Database & Admin User
+async function initializeDatabase() {
     try {
+        console.log('🔄 Initializing database...');
+        
+        // Ensure core tables exist (simplified version of schema.sql)
+        await db.query(`CREATE TABLE IF NOT EXISTS members (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), bungalow_no VARCHAR(20), phone VARCHAR(20), email VARCHAR(100), status VARCHAR(20) DEFAULT 'Active', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await db.query(`CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(50) UNIQUE, password VARCHAR(255), role VARCHAR(20), member_id INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await db.query(`CREATE TABLE IF NOT EXISTS expenses (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), amount DECIMAL(10, 2), expense_date DATE, month VARCHAR(20), category VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await db.query(`CREATE TABLE IF NOT EXISTS settings (id INT PRIMARY KEY, opening_balance DECIMAL(15, 2) DEFAULT 0, society_name VARCHAR(100) DEFAULT 'Aananda Society', due_day INT DEFAULT 10)`);
+        await db.query(`CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT PRIMARY KEY, sender_name VARCHAR(100), sender_role VARCHAR(20), message TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await db.query(`CREATE TABLE IF NOT EXISTS notices (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), content TEXT, date DATE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await db.query(`CREATE TABLE IF NOT EXISTS visitors (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), phone VARCHAR(20), purpose VARCHAR(255), visiting_bungalow VARCHAR(20), entry_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, status VARCHAR(10) DEFAULT 'In')`);
+        await db.query(`CREATE TABLE IF NOT EXISTS complaints (id INT AUTO_INCREMENT PRIMARY KEY, member_id INT, title VARCHAR(255), description TEXT, status VARCHAR(20) DEFAULT 'Pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await db.query(`CREATE TABLE IF NOT EXISTS payments (id INT AUTO_INCREMENT PRIMARY KEY, member_id INT, amount DECIMAL(10, 2), payment_date DATE, status VARCHAR(20) DEFAULT 'Pending', type VARCHAR(50), month VARCHAR(20), payment_method VARCHAR(20) DEFAULT 'Cash', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+
+        // Ensure default settings
+        await db.query('INSERT IGNORE INTO settings (id, opening_balance, society_name, due_day) VALUES (1, 0, "Aananda Society", 10)');
+
+        // Ensure Admin user
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash('admin123', salt);
-        
-        // Check if admin exists
         const [rows] = await db.query('SELECT * FROM users WHERE username = "admin"');
         
         if (rows.length === 0) {
-            await db.query('INSERT INTO users (username, password, role, member_id) VALUES (?, ?, ?, ?)', ['admin', hashedPassword, 'admin', null]);
+            await db.query('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ['admin', hashedPassword, 'admin']);
             console.log('✅ Default admin user created (admin / admin123)');
         } else {
-            // Update password to match admin123
             await db.query('UPDATE users SET password = ? WHERE username = "admin"', [hashedPassword]);
             console.log('✅ Admin password verified and synced');
         }
+        
+        console.log('✅ Database initialization complete.');
     } catch (err) {
-        console.error('⚠️ Could not ensure admin user:', err.message);
+        console.error('❌ Database initialization failed:', err.message);
     }
 }
-ensureAdminUser();
+initializeDatabase();
 
 // ✅ API Routes
 const apiRouter = express.Router();
@@ -82,7 +99,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-const PORT = process.env.PORT || 5001; // Match the configured port
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

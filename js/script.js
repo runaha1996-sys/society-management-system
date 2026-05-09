@@ -259,7 +259,7 @@ async function fetchDashboardStats() {
       mRes.json(), cRes.json(), pRes.json(), vRes.json(), eRes.json(), sRes.json()
     ]);
 
-    if (membersEl) membersEl.textContent = members.length;
+    if (membersEl) membersEl.textContent = Array.isArray(members) ? members.length : 0;
     if (complaintsEl) complaintsEl.textContent = complaints.filter(c => c.status === 'Open').length;
 
     // Role-based stats calculation
@@ -292,10 +292,10 @@ async function fetchDashboardStats() {
       // Calculate Current Balance
       if (balanceEl) {
         const openingBalance = parseFloat(settings.opening_balance) || 0;
-        const totalPaid = payments
+        const totalPaid = Array.isArray(payments) ? payments
           .filter(p => p.status.toLowerCase() === 'paid')
           .reduce((sum, p) => sum + parseFloat(p.amount), 0);
-        const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+        const totalExpenses = Array.isArray(expenses) ? expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0) : 0;
 
         const currentBalance = openingBalance + totalPaid - totalExpenses;
         balanceEl.textContent = `₹${currentBalance.toLocaleString()}`;
@@ -305,7 +305,7 @@ async function fetchDashboardStats() {
 
     if (visitorsEl) {
       const today = new Date().toLocaleDateString();
-      const count = visitors.filter(v => new Date(v.entry_time).toLocaleDateString() === today).length;
+      const count = Array.isArray(visitors) ? visitors.filter(v => new Date(v.entry_time).toLocaleDateString() === today).length : 0;
       visitorsEl.textContent = count;
     }
 
@@ -1574,7 +1574,8 @@ async function fetchChatMessages() {
     const currentUser = localStorage.getItem('user');
 
     let html = '';
-    messages.forEach(msg => {
+    if (Array.isArray(messages)) {
+      messages.forEach(msg => {
       const isSent = msg.sender_name === currentUser;
       const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       html += `
