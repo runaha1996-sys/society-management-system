@@ -1,13 +1,4 @@
--- Users table for authentication
-CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'member') DEFAULT 'admin',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Members table
+-- Members table (Created first so users can reference it)
 CREATE TABLE IF NOT EXISTS members (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -18,6 +9,17 @@ CREATE TABLE IF NOT EXISTS members (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Users table for authentication
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'member') DEFAULT 'admin',
+    member_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+);
+
 -- Complaints table
 CREATE TABLE IF NOT EXISTS complaints (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -26,7 +28,7 @@ CREATE TABLE IF NOT EXISTS complaints (
     description TEXT,
     status ENUM('Pending', 'In Progress', 'Resolved') DEFAULT 'Pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (member_id) REFERENCES members(id)
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
 );
 
 -- Payments table
@@ -40,7 +42,7 @@ CREATE TABLE IF NOT EXISTS payments (
     month VARCHAR(20),
     payment_method ENUM('Cash', 'UPI') DEFAULT 'Cash',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (member_id) REFERENCES members(id)
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
 );
 
 -- Visitors table
@@ -63,20 +65,18 @@ CREATE TABLE IF NOT EXISTS notices (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert a default admin user (password: admin123, hashed with bcrypt)
--- Note: $2a$10$YOvVl7D6LHBCW9iPt7jkCOYVTUTA9iq1WK3DgvB8K5H7RvtQe2JQm is 'admin123'
-INSERT IGNORE INTO users (username, password) VALUES ('admin', '$2a$10$YOvVl7D6LHBCW9iPt7jkCOYVTUTA9iq1WK3DgvB8K5H7RvtQe2JQm');
--- Insert a default admin user (password: 1234, hashed with bcrypt)
--- Note: $2a$10$NtiXSFal9hw65ZO1Ow0JBewtvbQ8AI/wMDQyhbqYSrR6KQVp78P2y is '1234'
-INSERT IGNORE INTO users (username, password) VALUES ('admin', '$2a$10$NtiXSFal9hw65ZO1Ow0JBewtvbQ8AI/wMDQyhbqYSrR6KQVp78P2y');
+-- Insert a default admin user (password: admin123)
+INSERT IGNORE INTO users (username, password, role) VALUES ('admin', '$2a$10$YOvVl7D6LHBCW9iPt7jkCOYVTUTA9iq1WK3DgvB8K5H7RvtQe2JQm', 'admin');
 
 -- Sample members
-INSERT INTO members (name, bungalow_no, phone, email, status) VALUES 
-('Rajesh Sharma', 'A-101', '+91 98765 00001', 'rajesh@email.com', 'Active'),
-('Priya Patel', 'A-102', '+91 98765 00002', 'priya@email.com', 'Active'),
-('Amit Singh', 'B-201', '+91 98765 00003', 'amit@email.com', 'Active'),
-('Neha Gupta', 'B-202', '+91 98765 00004', 'neha@email.com', 'Inactive'),
-('Vikram Joshi', 'C-301', '+91 98765 00005', 'vikram@email.com', 'Active'),
-('Sneha Reddy', 'C-302', '+91 98765 00006', 'sneha@email.com', 'Active'),
-('Mahesh Kulkarni', 'D-401', '+91 98765 00007', 'mahesh@email.com', 'Active'),
-('Anita Deshmukh', 'D-402', '+91 98765 00008', 'anita@email.com', 'Inactive');
+INSERT INTO members (id, name, bungalow_no, phone, email, status) VALUES 
+(1, 'Rajesh Sharma', 'A-101', '+91 98765 00001', 'rajesh@email.com', 'Active'),
+(2, 'Priya Patel', 'A-102', '+91 98765 00002', 'priya@email.com', 'Active'),
+(3, 'Amit Singh', 'B-201', '+91 98765 00003', 'amit@email.com', 'Active'),
+(4, 'Neha Gupta', 'B-202', '+91 98765 00004', 'neha@email.com', 'Inactive'),
+(5, 'Vikram Joshi', 'C-301', '+91 98765 00005', 'vikram@email.com', 'Active'),
+(6, 'Sneha Reddy', 'C-302', '+91 98765 00006', 'sneha@email.com', 'Active'),
+(7, 'Mahesh Kulkarni', 'D-401', '+91 98765 00007', 'mahesh@email.com', 'Active'),
+(8, 'Anita Deshmukh', 'D-402', '+91 98765 00008', 'anita@email.com', 'Inactive')
+ON DUPLICATE KEY UPDATE name=VALUES(name);
+
