@@ -1,6 +1,7 @@
 // ==================== AUTH SYSTEM ====================
 const API_URL = 'https://api.rahulpatel.online/api';
 
+
 function checkAuth() {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
