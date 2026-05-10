@@ -5,6 +5,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/', authMiddleware, complaintController.getComplaints);
 router.post('/', authMiddleware, complaintController.addComplaint);
-router.put('/:id/status', authMiddleware, complaintController.updateComplaintStatus);
+router.patch('/:id/status', authMiddleware, complaintController.updateComplaintStatus);
+
+console.log('✅ Complaint routes loaded');
 
 module.exports = router;

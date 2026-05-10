@@ -918,7 +918,7 @@ async function fetchComplaints() {
 async function updateComplaintStatus(id, newStatus) {
   try {
     const response = await fetch(`${API_URL}/complaints/${id}/status`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
