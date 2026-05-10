@@ -1,7 +1,16 @@
 // ==================== AUTH SYSTEM ====================
-const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.'))
+const isLocal = window.location.hostname === 'localhost' || 
+                 window.location.hostname === '127.0.0.1' || 
+                 window.location.hostname.startsWith('192.168.') || 
+                 window.location.hostname.startsWith('10.') || 
+                 window.location.hostname.endsWith('.local');
+
+const API_URL = isLocal
   ? `http://${window.location.hostname}:5001/api` 
   : 'https://api.rahulpatel.online/api';
+
+console.log("Current API_URL:", API_URL);
+console.log("Environment:", isLocal ? "Local" : "Production");
 
 function checkAuth() {
   const token = localStorage.getItem('token');
