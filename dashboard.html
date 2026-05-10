@@ -8,6 +8,9 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2c3e50">
+  <script src="js/pwa.js" defer></script>
 </head>
 
 <body>
@@ -68,7 +71,10 @@
       <!-- CONTENT -->
       <div class="content">
         <div class="content-header">
-          <h1>Welcome back, Admin 👋</h1>
+          <h1 id="welcomeMessage">Welcome back, Admin 👋</h1>
+          <div id="memberActions" style="display: none;">
+            <button class="btn btn-primary" onclick="window.location.href='complaints.html'"><i class="fas fa-plus"></i> Raise Complaint</button>
+          </div>
         </div>
 
         <!-- STAT CARDS -->
