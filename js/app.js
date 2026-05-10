@@ -35,12 +35,26 @@ function checkAuth() {
     if (expensesLink) expensesLink.style.display = 'none';
     if (settingsLink) settingsLink.style.display = 'none';
 
-    // Disable "Add" buttons on complaints and payments
+    // Show member dashboard actions
+    const memberActions = document.getElementById('memberActions');
+    if (memberActions && window.location.pathname.includes('dashboard.html')) {
+      memberActions.style.display = 'block';
+    }
+
+    // Disable "Add" buttons on complaints and payments for non-complaints pages
+    // On complaints.html, we WANT the FAB to be visible for members.
+    const isComplaintsPage = window.location.pathname.includes('complaints.html');
+    
     const addBtns = document.querySelectorAll('.btn-primary, .fab');
     addBtns.forEach(btn => {
-      // If it's the complaint page, keep the add button but simplify it
-      if (window.location.pathname.includes('complaints.html')) {
-        // Keep it
+      // Don't hide if:
+      // 1. It's the dashboard raise complaint button
+      // 2. It's the complaints FAB
+      // 3. It's INSIDE a modal (like Submit Complaint)
+      if (btn.closest('#memberActions') || 
+          (isComplaintsPage && btn.classList.contains('fab')) || 
+          btn.closest('.modal')) {
+        btn.style.display = 'flex';
       } else {
         btn.style.display = 'none';
       }
