@@ -45,14 +45,14 @@ exports.addComplaint = async (req, res) => {
             return res.status(400).json({ message: 'Member ID is required' });
         }
 
-        const [result] = await db.execute(
+        const [result] = await db.query(
             'INSERT INTO complaints (member_id, title, description, status) VALUES (?, ?, ?, ?)',
             [member_id, title, description, 'Open']
         );
         res.status(201).json({ id: result.insertId, title, description, status: 'Open', date: new Date() });
     } catch (err) {
         console.error('Database error while saving complaint:', err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error: ' + err.message });
     }
 };
 
@@ -66,10 +66,10 @@ exports.updateComplaintStatus = async (req, res) => {
     }
 
     try {
-        await db.execute('UPDATE complaints SET status = ? WHERE id = ?', [status, id]);
+        await db.query('UPDATE complaints SET status = ? WHERE id = ?', [status, id]);
         res.json({ message: 'Complaint status updated successfully' });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error: ' + err.message });
     }
 };
