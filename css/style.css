@@ -152,7 +152,11 @@ tr:hover{background:rgba(99,102,241,.03)}
 .status{padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:600}
 .status.paid,.status.closed,.status.active{background:rgba(34,197,94,.1);color:#16a34a}
 .status.pending,.status.open{background:rgba(245,158,11,.1);color:#d97706}
+.status.in-process{background:rgba(59,130,246,.1);color:#2563eb}
 .status.inactive{background:rgba(239,68,68,.1);color:#dc2626}
+
+.status-select{padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.8rem;background:var(--card);color:var(--text);cursor:pointer}
+.status-select:focus{outline:none;border-color:var(--primary)}
 
 .search-box{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;max-width:300px}
 .search-box i{color:var(--text-secondary)}
@@ -257,3 +261,28 @@ canvas{max-width:100%}
 .chat-footer input { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 20px; outline: none; font-size: .85rem; }
 .chat-toggle { position: fixed; bottom: 24px; right: 90px; width: 56px; height: 56px; border-radius: 50%; background: var(--secondary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: var(--shadow-lg); border: none; cursor: pointer; z-index: 1000; transition: var(--transition); }
 .chat-toggle:hover { transform: scale(1.1); background: var(--primary-dark); }
+
+/* FLOATING ACTION BUTTON (FAB) */
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: var(--shadow-lg);
+  border: none;
+  cursor: pointer;
+  z-index: 1000;
+  transition: var(--transition);
+}
+.fab:hover {
+  transform: scale(1.1) rotate(90deg);
+  background: var(--primary-dark);
+}

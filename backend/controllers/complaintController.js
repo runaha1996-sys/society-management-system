@@ -55,3 +55,21 @@ exports.addComplaint = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+exports.updateComplaintStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const { role } = req.user;
+
+    if (role !== 'admin') {
+        return res.status(403).json({ message: 'Only admins can update complaint status' });
+    }
+
+    try {
+        await db.execute('UPDATE complaints SET status = ? WHERE id = ?', [status, id]);
+        res.json({ message: 'Complaint status updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};

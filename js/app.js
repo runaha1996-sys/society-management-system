@@ -876,9 +876,26 @@ async function fetchComplaints() {
     const complaints = await response.json();
 
     if (response.ok) {
+      const role = localStorage.getItem('role');
       tableBody.innerHTML = '';
       complaints.forEach((complaint, index) => {
         const date = new Date(complaint.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        
+        let actionsHtml = '';
+        if (role === 'admin') {
+          actionsHtml = `
+            <td class="admin-only">
+              <select class="status-select" onchange="updateComplaintStatus(${complaint.id}, this.value)">
+                <option value="Open" ${complaint.status === 'Open' ? 'selected' : ''}>Open</option>
+                <option value="In Process" ${complaint.status === 'In Process' ? 'selected' : ''}>In Process</option>
+                <option value="Closed" ${complaint.status === 'Closed' ? 'selected' : ''}>Closed</option>
+              </select>
+            </td>
+          `;
+        } else {
+          actionsHtml = '<td class="admin-only">-</td>';
+        }
+
         const row = `
           <tr>
             <td>${complaint.id}</td>
@@ -886,7 +903,8 @@ async function fetchComplaints() {
             <td>${complaint.title}</td>
             <td style="max-width: 250px; overflow-wrap: break-word;">${complaint.description || '-'}</td>
             <td>${date}</td>
-            <td><span class="status ${complaint.status.toLowerCase()}">${complaint.status}</span></td>
+            <td><span class="status ${complaint.status.toLowerCase().replace(' ', '-')}">${complaint.status}</span></td>
+            ${actionsHtml}
           </tr>
         `;
         tableBody.insertAdjacentHTML('beforeend', row);
@@ -894,6 +912,31 @@ async function fetchComplaints() {
     }
   } catch (error) {
     console.error('Error fetching complaints:', error);
+  }
+}
+
+async function updateComplaintStatus(id, newStatus) {
+  try {
+    const response = await fetch(`${API_URL}/complaints/${id}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+
+    if (response.ok) {
+      fetchComplaints();
+      // Also update dashboard stats if we are on dashboard
+      if (document.getElementById('statOpenComplaints')) fetchDashboardStats();
+    } else {
+      const data = await response.json();
+      alert(data.message || 'Failed to update status');
+    }
+  } catch (error) {
+    console.error('Error updating complaint status:', error);
+    alert('Server connection failed');
   }
 }
 
