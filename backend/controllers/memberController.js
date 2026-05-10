@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 
 exports.getMembers = async (req, res) => {
     try {
-        const [members] = await db.execute('SELECT * FROM members ORDER BY id ASC');
+        const [members] = await db.query('SELECT * FROM members ORDER BY id ASC');
         res.json(members);
     } catch (err) {
         console.error(err);
@@ -19,7 +19,7 @@ exports.addMember = async (req, res) => {
     const cleanPhone = trimmedPhone.replace(/\D/g, '').slice(-10);
 
     try {
-        const [result] = await db.execute(
+        const [result] = await db.query(
             'INSERT INTO members (name, bungalow_no, phone, email) VALUES (?, ?, ?, ?)',
             [name, bungalow_no, trimmedPhone, email]
         );
@@ -31,7 +31,7 @@ exports.addMember = async (req, res) => {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(memberPassword, salt);
             try {
-                await db.execute(
+                await db.query(
                     'INSERT INTO users (username, password, role, member_id) VALUES (?, ?, ?, ?)',
                     [cleanPhone, hashedPassword, 'member', memberId]
                 );
@@ -56,20 +56,20 @@ exports.updateMember = async (req, res) => {
 
     try {
         // Update member details
-        await db.execute(
+        await db.query(
             'UPDATE members SET name = ?, bungalow_no = ?, phone = ?, email = ?, status = ? WHERE id = ?',
             [name, bungalow_no, trimmedPhone, email, status || 'Active', id]
         );
 
         // Update or create user login for the member
-        const [existingUsers] = await db.execute('SELECT * FROM users WHERE member_id = ?', [id]);
+        const [existingUsers] = await db.query('SELECT * FROM users WHERE member_id = ?', [id]);
         
         if (existingUsers.length > 0) {
             const user = existingUsers[0];
             // Only update username if cleanPhone is provided and different
             if (cleanPhone !== '' && cleanPhone !== user.username) {
                 try {
-                    await db.execute('UPDATE users SET username = ? WHERE member_id = ?', [cleanPhone, id]);
+                    await db.query('UPDATE users SET username = ? WHERE member_id = ?', [cleanPhone, id]);
                 } catch (uErr) {
                     console.error('Error updating username (likely duplicate):', uErr.message);
                 }
@@ -79,7 +79,7 @@ exports.updateMember = async (req, res) => {
             const salt = await bcrypt.genSalt(10);
             const defaultHashedPassword = await bcrypt.hash('admin@2026', salt);
             try {
-                await db.execute(
+                await db.query(
                     'INSERT INTO users (username, password, role, member_id) VALUES (?, ?, ?, ?)',
                     [cleanPhone, defaultHashedPassword, 'member', id]
                 );
@@ -92,7 +92,7 @@ exports.updateMember = async (req, res) => {
         if (password && password.trim() !== '') {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
-            await db.execute('UPDATE users SET password = ? WHERE member_id = ?', [hashedPassword, id]);
+            await db.query('UPDATE users SET password = ? WHERE member_id = ?', [hashedPassword, id]);
         }
 
         res.json({ message: 'Member updated successfully' });
@@ -109,9 +109,9 @@ exports.deleteMember = async (req, res) => {
         // First delete dependent records (payments, complaints) or let ON DELETE CASCADE handle it
         // For safety, let's just delete the member. If FK constraints fail, we'll know.
         // Actually, we should handle dependencies.
-        await db.execute('DELETE FROM payments WHERE member_id = ?', [id]);
-        await db.execute('DELETE FROM complaints WHERE member_id = ?', [id]);
-        await db.execute('DELETE FROM members WHERE id = ?', [id]);
+        await db.query('DELETE FROM payments WHERE member_id = ?', [id]);
+        await db.query('DELETE FROM complaints WHERE member_id = ?', [id]);
+        await db.query('DELETE FROM members WHERE id = ?', [id]);
         res.json({ message: 'Member deleted successfully' });
     } catch (err) {
         console.error(err);
@@ -125,7 +125,7 @@ exports.toggleMemberStatus = async (req, res) => {
     const newStatus = status === 'Active' ? 'Inactive' : 'Active';
 
     try {
-        await db.execute('UPDATE members SET status = ? WHERE id = ?', [newStatus, id]);
+        await db.query('UPDATE members SET status = ? WHERE id = ?', [newStatus, id]);
         res.json({ message: `Member status updated to ${newStatus}`, newStatus });
     } catch (err) {
         console.error(err);

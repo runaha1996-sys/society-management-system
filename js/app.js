@@ -742,7 +742,8 @@ async function updateMember() {
       fetchMembers();
       alert('Member updated successfully!');
     } else {
-      alert('Failed to update member');
+      const data = await response.json();
+      alert('Failed to update member: ' + (data.message || 'Unknown error'));
     }
   } catch (error) {
     console.error('Error updating member:', error);
