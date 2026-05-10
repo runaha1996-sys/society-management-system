@@ -53,8 +53,10 @@ async function initializeDatabase() {
         const [rows] = await db.query('SELECT * FROM users WHERE username = "admin"');
         if (rows.length === 0) {
             await db.query('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ['admin', hashedPassword, 'admin']);
+            console.log('✅ Default admin user created (admin/admin123)');
         } else {
-            await db.query('UPDATE users SET password = ? WHERE username = "admin"', [hashedPassword]);
+            // Password update removed to prevent overwriting user-set passwords on restart
+            console.log('ℹ️ Admin user already exists.');
         }
         
         // Ensure Sample Members if table is empty

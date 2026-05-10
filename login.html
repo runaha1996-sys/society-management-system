@@ -69,10 +69,15 @@
   <script src="js/app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(() => {
-        const modal = document.getElementById('announcementModal');
-        if (modal) modal.classList.add('show');
-      }, 500);
+      if (!sessionStorage.getItem('announcementShown')) {
+        setTimeout(() => {
+          const modal = document.getElementById('announcementModal');
+          if (modal) {
+            modal.classList.add('show');
+            sessionStorage.setItem('announcementShown', 'true');
+          }
+        }, 500);
+      }
 
       // Close modal when clicking on overlay
       const modalOverlay = document.getElementById('announcementModal');

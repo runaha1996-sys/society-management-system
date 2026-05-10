@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
+    console.log("Login request body:", JSON.stringify(req.body));
 
     if (!username || !password) {
       return res.status(400).json({
@@ -13,12 +14,14 @@ exports.login = async (req, res) => {
     }
 
     // Get user
+    console.log("Login attempt for username:", username);
     const [rows] = await db.query(
       "SELECT * FROM users WHERE username = ?",
       [username]
     );
 
     const user = rows[0];
+    console.log("User found:", user ? { id: user.id, username: user.username, role: user.role } : "None");
 
     if (!user) {
       return res.status(401).json({
@@ -28,6 +31,7 @@ exports.login = async (req, res) => {
 
     // ✅ BCRYPT PASSWORD CHECK
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Password match result for", username, ":", isMatch);
     if (!isMatch) {
       return res.status(401).json({
         message: "Invalid credentials"
