@@ -51,8 +51,21 @@ exports.updateMember = async (req, res) => {
             [name, bungalow_no, phone, email, status, id]
         );
 
-        // Update username (phone) in users table
-        await db.execute('UPDATE users SET username = ? WHERE member_id = ?', [phone, id]);
+        // Update or create user login for the member
+        const [existingUsers] = await db.execute('SELECT * FROM users WHERE member_id = ?', [id]);
+        
+        if (existingUsers.length > 0) {
+            // Update existing user
+            await db.execute('UPDATE users SET username = ? WHERE member_id = ?', [phone, id]);
+        } else if (phone && phone.trim() !== '') {
+            // Create new user if phone is now provided
+            const salt = await bcrypt.genSalt(10);
+            const defaultHashedPassword = await bcrypt.hash('admin@2026', salt);
+            await db.execute(
+                'INSERT INTO users (username, password, role, member_id) VALUES (?, ?, ?, ?)',
+                [phone, defaultHashedPassword, 'member', id]
+            );
+        }
 
         // If a new password is provided, update it in the users table
         if (password && password.trim() !== '') {
