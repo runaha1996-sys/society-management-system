@@ -35,7 +35,7 @@
     <div class="modal" style="background: linear-gradient(135deg,#0f172a,#1e1b4b); color: #fff; border: 1px solid rgba(255,255,255,0.1); max-width: 550px; width: 90%;">
       <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
         <h3 style="color: var(--primary-light);">Announcement</h3>
-        <button class="modal-close" onclick="closeModal('announcementModal')" style="color: #fff;">&times;</button>
+        <button class="modal-close" onclick="closeModal('announcementModal')" style="color: #fff; font-size: 1.5rem; padding: 10px; line-height: 1; z-index: 1001; position: relative;"><i class="fas fa-times"></i></button>
       </div>
       <div class="modal-body" style="text-align: center; padding: 30px;">
         <h3 style="color: var(--primary-light); margin-bottom: 15px; font-size: 1.3rem; letter-spacing: 1px;">🚀 KGF SOFTWARE SOLUTION</h3>
@@ -56,6 +56,12 @@
           📅 Launch Date: 05 June 2026
         </div>
         <p style="font-size: 1rem; font-weight: 600; color: #fff; letter-spacing: 0.5px;">Stay tuned for something amazing!</p>
+        
+        <div style="margin-top: 25px;">
+          <button class="btn btn-primary" onclick="closeModal('announcementModal')" style="width: 100%; padding: 12px; border-radius: 30px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; font-size: 1rem; box-shadow: 0 4px 15px rgba(99,102,241,0.3);">
+            Continue to Login
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -64,8 +70,19 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
-        document.getElementById('announcementModal').classList.add('show');
+        const modal = document.getElementById('announcementModal');
+        if (modal) modal.classList.add('show');
       }, 500);
+
+      // Close modal when clicking on overlay
+      const modalOverlay = document.getElementById('announcementModal');
+      if (modalOverlay) {
+        modalOverlay.addEventListener('click', function(e) {
+          if (e.target === this) {
+            closeModal('announcementModal');
+          }
+        });
+      }
     });
   </script>
 </body>

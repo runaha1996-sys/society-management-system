@@ -1,5 +1,5 @@
 // ==================== AUTH SYSTEM ====================
-const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.'))
   ? `http://${window.location.hostname}:5001/api` 
   : 'https://api.rahulpatel.online/api';
 
@@ -93,7 +93,7 @@ try {
       }
     } catch (error) {
 console.error("Login Fetch Error:", error);
-      err.textContent = 'Server connection failed!';
+      err.textContent = `Server connection failed! (${error.message})`;
       err.style.display = 'block';
     } finally {
       submitBtn.disabled = false;
@@ -294,7 +294,7 @@ async function fetchDashboardStats() {
         const openingBalance = parseFloat(settings.opening_balance) || 0;
         const totalPaid = Array.isArray(payments) ? payments
           .filter(p => p.status.toLowerCase() === 'paid')
-          .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+          .reduce((sum, p) => sum + parseFloat(p.amount), 0) : 0;
         const totalExpenses = Array.isArray(expenses) ? expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0) : 0;
 
         const currentBalance = openingBalance + totalPaid - totalExpenses;
@@ -1607,6 +1607,7 @@ async function fetchChatMessages() {
     const wasAtBottom = body.scrollHeight - body.scrollTop <= body.clientHeight + 50;
     body.innerHTML = html;
     if (wasAtBottom) body.scrollTop = body.scrollHeight;
+    }
   } catch (err) { console.error('Chat fetch error:', err); }
 }
 
