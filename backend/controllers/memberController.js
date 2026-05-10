@@ -14,57 +14,78 @@ exports.getMembers = async (req, res) => {
 exports.addMember = async (req, res) => {
     const { name, bungalow_no, phone, email, password } = req.body;
     const memberPassword = password || 'admin@2026';
+    const trimmedPhone = phone ? phone.trim() : '';
+    // Clean phone for username (remove non-digits for consistent login)
+    const cleanPhone = trimmedPhone.replace(/\D/g, '').slice(-10);
 
     try {
         const [result] = await db.execute(
             'INSERT INTO members (name, bungalow_no, phone, email) VALUES (?, ?, ?, ?)',
-            [name, bungalow_no, phone, email]
+            [name, bungalow_no, trimmedPhone, email]
         );
         
         const memberId = result.insertId;
 
         // Create a user login for the member ONLY if phone is provided
-        if (phone && phone.trim() !== '') {
+        if (cleanPhone && cleanPhone !== '') {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(memberPassword, salt);
-            await db.execute(
-                'INSERT INTO users (username, password, role, member_id) VALUES (?, ?, ?, ?)',
-                [phone, hashedPassword, 'member', memberId]
-            );
+            try {
+                await db.execute(
+                    'INSERT INTO users (username, password, role, member_id) VALUES (?, ?, ?, ?)',
+                    [cleanPhone, hashedPassword, 'member', memberId]
+                );
+            } catch (uErr) {
+                console.error('Error creating user login (phone might already exist):', uErr.message);
+            }
         }
 
-        res.status(201).json({ id: memberId, name, bungalow_no, phone, email, status: 'Active' });
+        res.status(201).json({ id: memberId, name, bungalow_no, phone: trimmedPhone, email, status: 'Active' });
     } catch (err) {
-        console.error('Error adding member, payment and user:', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error adding member:', err);
+        res.status(500).json({ message: 'Server error: ' + err.message });
     }
 };
 
 exports.updateMember = async (req, res) => {
     const { id } = req.params;
     const { name, bungalow_no, phone, email, status, password } = req.body;
+    const trimmedPhone = phone ? phone.trim() : '';
+    // Clean phone for username
+    const cleanPhone = trimmedPhone.replace(/\D/g, '').slice(-10);
 
     try {
         // Update member details
         await db.execute(
             'UPDATE members SET name = ?, bungalow_no = ?, phone = ?, email = ?, status = ? WHERE id = ?',
-            [name, bungalow_no, phone, email, status, id]
+            [name, bungalow_no, trimmedPhone, email, status || 'Active', id]
         );
 
         // Update or create user login for the member
         const [existingUsers] = await db.execute('SELECT * FROM users WHERE member_id = ?', [id]);
         
         if (existingUsers.length > 0) {
-            // Update existing user
-            await db.execute('UPDATE users SET username = ? WHERE member_id = ?', [phone, id]);
-        } else if (phone && phone.trim() !== '') {
+            const user = existingUsers[0];
+            // Only update username if cleanPhone is provided and different
+            if (cleanPhone !== '' && cleanPhone !== user.username) {
+                try {
+                    await db.execute('UPDATE users SET username = ? WHERE member_id = ?', [cleanPhone, id]);
+                } catch (uErr) {
+                    console.error('Error updating username (likely duplicate):', uErr.message);
+                }
+            }
+        } else if (cleanPhone !== '') {
             // Create new user if phone is now provided
             const salt = await bcrypt.genSalt(10);
             const defaultHashedPassword = await bcrypt.hash('admin@2026', salt);
-            await db.execute(
-                'INSERT INTO users (username, password, role, member_id) VALUES (?, ?, ?, ?)',
-                [phone, defaultHashedPassword, 'member', id]
-            );
+            try {
+                await db.execute(
+                    'INSERT INTO users (username, password, role, member_id) VALUES (?, ?, ?, ?)',
+                    [cleanPhone, defaultHashedPassword, 'member', id]
+                );
+            } catch (iErr) {
+                console.error('Error creating user for member:', iErr.message);
+            }
         }
 
         // If a new password is provided, update it in the users table
@@ -76,8 +97,8 @@ exports.updateMember = async (req, res) => {
 
         res.json({ message: 'Member updated successfully' });
     } catch (err) {
-        console.error('Error updating member and user:', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error updating member:', err);
+        res.status(500).json({ message: 'Server error: ' + err.message });
     }
 };
 
