@@ -37,6 +37,16 @@ async function initializeDatabase() {
         
         await db.query(`CREATE TABLE IF NOT EXISTS members (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), bungalow_no VARCHAR(20), phone VARCHAR(20), email VARCHAR(100), status VARCHAR(20) DEFAULT 'Active', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
         await db.query(`CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(50) UNIQUE, password VARCHAR(255), role VARCHAR(20), member_id INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        
+        // Ensure member_id column exists (Migration for production)
+        try {
+            await db.query(`ALTER TABLE users ADD COLUMN member_id INT`);
+            await db.query(`ALTER TABLE users ADD CONSTRAINT fk_member FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE`);
+            console.log('✅ Added member_id column and foreign key to users table.');
+        } catch (e) {
+            // Column probably already exists
+        }
+
         await db.query(`CREATE TABLE IF NOT EXISTS expenses (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), amount DECIMAL(10, 2), expense_date DATE, month VARCHAR(20), category VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
         await db.query(`CREATE TABLE IF NOT EXISTS settings (id INT PRIMARY KEY, opening_balance DECIMAL(15, 2) DEFAULT 0, society_name VARCHAR(100) DEFAULT 'Aananda Society', due_day INT DEFAULT 10)`);
         await db.query(`CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT PRIMARY KEY, sender_name VARCHAR(100), sender_role VARCHAR(20), message TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
