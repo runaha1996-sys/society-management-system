@@ -53,6 +53,15 @@ async function initializeDatabase() {
         await db.query(`CREATE TABLE IF NOT EXISTS notices (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), content TEXT, date DATE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
         await db.query(`CREATE TABLE IF NOT EXISTS visitors (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), phone VARCHAR(20), purpose VARCHAR(255), visiting_bungalow VARCHAR(20), entry_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, status VARCHAR(10) DEFAULT 'In')`);
         await db.query(`CREATE TABLE IF NOT EXISTS complaints (id INT AUTO_INCREMENT PRIMARY KEY, member_id INT, title VARCHAR(255), description TEXT, status VARCHAR(20) DEFAULT 'Pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        
+        // Migration: Ensure complaints status column is wide enough and not restricted
+        try {
+            await db.query(`ALTER TABLE complaints MODIFY COLUMN status VARCHAR(50) DEFAULT 'Open'`);
+            console.log('✅ Updated complaints status column.');
+        } catch (e) {
+            console.warn('⚠️ Could not update complaints status column:', e.message);
+        }
+
         await db.query(`CREATE TABLE IF NOT EXISTS payments (id INT AUTO_INCREMENT PRIMARY KEY, member_id INT, amount DECIMAL(10, 2), payment_date DATE, status VARCHAR(20) DEFAULT 'Pending', type VARCHAR(50), month VARCHAR(20), payment_method VARCHAR(20) DEFAULT 'Cash', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
 
         await db.query('INSERT IGNORE INTO settings (id, opening_balance, society_name, due_day) VALUES (1, 0, "Aananda Society", 10)');
