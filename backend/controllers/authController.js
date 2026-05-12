@@ -81,3 +81,40 @@ exports.login = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new passwords are required" });
+    }
+
+    // 1. Find user
+    const [users] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = users[0];
+
+    // 2. Check current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Incorrect current password" });
+    }
+
+    // 3. Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // 4. Update password
+    await db.query("UPDATE users SET password = ? WHERE id = ?", [hashedPassword, userId]);
+
+    return res.json({ message: "Password changed successfully" });
+  } catch (err) {
+    console.error("Change Password Error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};

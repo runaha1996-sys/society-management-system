@@ -5,6 +5,11 @@ const isLocal = window.location.hostname === 'localhost' ||
                  window.location.hostname.startsWith('10.') || 
                  window.location.hostname.endsWith('.local');
 
+// Force HTTPS in production
+if (window.location.protocol === 'http:' && !isLocal) {
+  window.location.href = window.location.href.replace('http:', 'https:');
+}
+
 const API_URL = isLocal
   ? `http://${window.location.hostname}:5001/api` 
   : 'https://api.rahulpatel.online/api';
@@ -1784,6 +1789,59 @@ async function updateSettings() {
     alert('Server connection failed!');
   } finally {
     if (btn) { btn.textContent = 'Save Settings'; btn.disabled = false; }
+  }
+}
+
+async function changePassword() {
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  const btn = document.querySelector('button[onclick="changePassword()"]');
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    alert('Please fill all password fields');
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    alert('New passwords do not match');
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Changing...';
+    }
+
+    const response = await fetch(`${API_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert('Password changed successfully!');
+      // Clear fields
+      document.getElementById('currentPassword').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+    } else {
+      alert(data.message || 'Failed to change password');
+    }
+  } catch (error) {
+    console.error('Error changing password:', error);
+    alert('Server connection failed!');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-key"></i> Change Password';
+    }
   }
 }
 
